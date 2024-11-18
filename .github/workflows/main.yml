@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Cypress tests on Chrome (headless)
-        uses: cypress-io/github-action@v5
+        uses: cypress-io/github-action@v6
         with:
           browser: chrome
           start: cypress run 
@@ -34,7 +34,7 @@ jobs:
       - run: npx image-size cypress/screenshots/**/*.png
 
       - name: Run Cypress tests on Chrome (headed)
-        uses: cypress-io/github-action@v5
+        uses: cypress-io/github-action@v6
         with:
           browser: chrome
           start: cypress run  # Or your specific start command
