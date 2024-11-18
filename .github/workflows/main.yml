@@ -16,14 +16,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: npm install
-
       - name: Run Cypress tests on Chrome (headless)
         uses: cypress-io/github-action@v5
         with:
           browser: chrome
-          start: npm cypress run 
+          start: cypress run 
           runTests: true
           headless: true
         timeout-minutes: 1 
@@ -40,7 +37,7 @@ jobs:
         uses: cypress-io/github-action@v5
         with:
           browser: chrome
-          start: npm cypress run  # Or your specific start command
+          start: cypress run  # Or your specific start command
           runTests: true
           headless: false
         timeout-minutes: 1 # Adjust timeout as needed
