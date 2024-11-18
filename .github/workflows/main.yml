@@ -1,21 +1,54 @@
 name: E2E on Chrome
+
 on:
-    push:
-        branches: [main]
-    pull_request:
-        branches: [main]
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+  workflow_dispatch:
 
 jobs:
-    cypress-run:
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v3
-            - run: npm ci
-            - name: Cypress run
-              uses: cypress-io/github-action@v5
-              timeout-minutes: 1
-              with:
-                  build: npm install
-                  start: npm cypress run
-                  browser: chrome
-              
+  tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Cypress tests on Chrome (headless)
+        uses: cypress-io/github-action@v5
+        with:
+          browser: chrome
+          start: npm cypress run 
+          runTests: true
+          headless: true
+        timeout-minutes: 1 
+
+      - name: Upload screenshots for headless Chrome tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-headless-chrome
+          path: cypress/screenshots/
+
+      - run: npx image-size cypress/screenshots/**/*.png
+
+      - name: Run Cypress tests on Chrome (headed)
+        uses: cypress-io/github-action@v5
+        with:
+          browser: chrome
+          start: npm cypress run  # Or your specific start command
+          runTests: true
+          headless: false
+        timeout-minutes: 1 # Adjust timeout as needed
+
+      - name: Upload screenshots for headed Chrome tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-headed-chrome
+          path: cypress/screenshots/
+
+      - run: npx image-size cypress/screenshots/**/*.png
