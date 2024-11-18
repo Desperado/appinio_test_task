@@ -32,20 +32,3 @@ jobs:
           path: cypress/screenshots/
 
       - run: npx image-size cypress/screenshots/**/*.png
-
-      - name: Run Cypress tests on Chrome (headed)
-        uses: cypress-io/github-action@v6
-        with:
-          browser: chrome
-          start: cypress run  # Or your specific start command
-          runTests: true
-          headless: false
-        timeout-minutes: 1 # Adjust timeout as needed
-
-      - name: Upload screenshots for headed Chrome tests
-        uses: actions/upload-artifact@v4
-        with:
-          name: screenshots-headed-chrome
-          path: cypress/screenshots/
-
-      - run: npx image-size cypress/screenshots/**/*.png
