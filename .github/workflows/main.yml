@@ -20,7 +20,7 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           browser: chrome
-          start: cypress run 
+          start: npx cypress info
           runTests: true
           headless: true
         timeout-minutes: 1 
