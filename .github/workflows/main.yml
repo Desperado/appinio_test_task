@@ -1,0 +1,21 @@
+name: E2E on Chrome
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+    cypress-run:
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+            - run: npm ci
+            - name: Cypress run
+              uses: cypress-io/github-action@v5
+              timeout-minutes: 1
+              with:
+                  build: npm install
+                  start: npm cypress run
+                  browser: chrome
+              
