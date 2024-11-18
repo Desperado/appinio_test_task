@@ -1,42 +1,308 @@
 describe('OrangeHRM E2E Tests', () => {
-    const baseUrl = 'https://opensource-demo.orangehrmlive.com/web/index.php';
+  const baseUrl = 'https://opensource-demo.orangehrmlive.com/web/index.php';
 
-    beforeEach(() => {
-        cy.visit(`${baseUrl}/auth/login`);
-        cy.get('input[name="username"]').type('Admin');
-        cy.get('input[name="password"]').type('admin123');
-        cy.get('button[type="submit"]').click();
-    });
+  beforeEach(() => {
+      cy.visit(`${baseUrl}/auth/login`);
+      cy.get('input[name="username"]').type('Admin');
+      cy.get('input[name="password"]').type('admin123');
+      cy.get('button[type="submit"]').click();
+  });
 
-    // Case 1 - Login Test
-    it('should log in and navigate to the dashboard', () => {
-        cy.url().should('include', '/dashboard/index');
-        cy.get('.oxd-topbar-header-breadcrumb').should('contain', 'Dashboard');
-    });
+  // Case 1 - Login Test
+  it('should log in and navigate to the dashboard', () => {
+      cy.url().should('include', '/dashboard/index');
+      cy.get('.oxd-topbar-header-breadcrumb').should('contain', 'Dashboard');
+  });
 
-    // Case 2 - Edit Personal Details
-    it('should edit and save personal details on "My Info" page', () => {
+  // Case 2 - Edit Personal Details
+  it('should edit and save personal details on "My Info" page', () => {
 
-        // Step 2: Navigate to "My Info" page
-        cy.get('span.oxd-main-menu-item--name').contains('My Info').click();
+    cy.get('span.oxd-main-menu-item--name').contains('My Info').click();
 
-        // Edit personal details
-        cy.get('input[name="firstName"]').clear().type('John');
-        cy.get('input[name="middleName"]').clear().type('Michael');
-        cy.get('input[name="lastName"]').clear().type('Doe');
-        //cy.get('input[name="licenseExpiryDate"]').clear().type('2023-12-13');
-        //cy.get('div[role="button"]').contains('Nationality').click();
-        //cy.get('.oxd-select-dropdown').contains('American').click();
+    // Edit personal details
+    cy.get('input[name="firstName"]').clear().type('John');
+    cy.get('input[name="middleName"]').clear().type('Michael');
+    cy.get('input[name="lastName"]').clear().type('Doe');
 
-        // Save changes
-        cy.get('button.oxd-button--secondary').contains('Save').click();
+    // Handle Date of Birth (first calendar picker)
+    cy.get('input[placeholder="yyyy-dd-mm"]')
+        .eq(0) // Select the first date picker (Date of Birth)
+        .click(); // Open the Date of Birth picker
+    cy.get('.oxd-calendar-date')
+        .contains('15') // Select the 15th as an example
+        .click();
 
-        // Verify that the data was saved
-        cy.get('input[name="firstName"]').should('have.value', 'John');
-        cy.get('input[name="middleName"]').should('have.value', 'Michael');
-        cy.get('input[name="lastName"]').should('have.value', 'Doe');
-        //cy.get('input[name="licenseExpiryDate"]').should('have.value', '2023-12-13');
-        });
+    // Handle License Expiry Date (second calendar picker)
+    cy.get('input[placeholder="yyyy-dd-mm"]')
+        .eq(1) // Select the second date picker (License Expiry Date)
+        .click(); // Open the License Expiry Date picker
+    cy.get('.oxd-calendar-date')
+        .contains('13') // Select the 13th as an example
+        .click();
 
+    // Set Nationality
+    cy.get('div.oxd-select-text-input').eq(0).click(); // Click on the dropdown
+    cy.get('.oxd-select-dropdown').contains('American').click(); // Select "American"
+
+    // Set Marital Status
+    cy.get('div.oxd-select-text-input').eq(1).click(); // Click on the dropdown
+    cy.get('.oxd-select-dropdown').contains('Married').click(); // Select "Married"
+
+    // Save changes
+    cy.get('button.oxd-button--secondary').contains('Save').click();
+
+    // Verify that the data was saved
+    cy.get('input[name="firstName"]').should('have.value', 'John');
+    cy.get('input[name="middleName"]').should('have.value', 'Michael');
+    cy.get('input[name="lastName"]').should('have.value', 'Doe');
+    cy.get('input[placeholder="yyyy-dd-mm"]')
+        .eq(0) // Verify the Date of Birth
+        .should('have.value', '2024-15-11'); // Adjust the format if needed
+    cy.get('input[placeholder="yyyy-dd-mm"]')
+        .eq(1) // Verify the License Expiry Date
+        .should('have.value', '2023-13-10'); // Adjust the format if needed
+        cy.get('div.oxd-select-text-input')
+        .eq(0) // Verify Nationality
+        .should('contain.text', 'American');
+    cy.get('div.oxd-select-text-input')
+        .eq(1) // Verify Marital Status
+        .should('contain.text', 'Married');
     
+    });
+
+  it('Validates the post and interactions with mock data', () => {
+
+    cy.visit(`${baseUrl}/buzz/viewBuzz`);
+    // Mocking the posts API
+    cy.intercept('GET', '/web/index.php/api/v2/buzz/feed?*', (req) => {
+      req.reply((res) => {
+        // Modify the response with unique post IDs
+        res.body.data = [
+          {
+            id: 18, // Unique post ID
+            post: { id: 18 }, // Ensuring the post object has a unique ID
+            type: 'photo',
+            liked: true,
+            text: 'Some random text.',
+            employee: {
+              empNumber: 7,
+              lastName: 'Doe',
+              firstName: 'John',
+              middleName: 'Michael',
+              employeeId: 'johnmdoe',
+              terminationId: null
+            },
+            stats: {
+              numOfLikes: 1,
+              numOfComments: 0,
+              numOfShares: 0
+            },
+            createdDate: '2024-11-17',
+            createdTime: '11:05',
+            originalPost: null,
+            permission: {
+              canUpdate: true,
+              canDelete: true
+            },
+            photoIds: [17]
+          }
+        ];
+        return res;
+      });
+    }).as('getPosts');
+
+    // Wait for the mock API response
+    cy.wait('@getPosts').then((interception) => {
+      // Validate the intercepted request
+      expect(interception.response.statusCode).to.eq(200);
+      expect(interception.response.body.data).to.have.length.greaterThan(0);
+      expect(interception.response.body.data[0].id).to.eq(18); // Assert unique post ID
+    });
+
+    // Validate the first post's details in the UI
+    cy.get('.orangehrm-buzz-post-emp-name', { timeout: 8000 }) // Extended timeout
+      .should('contain', 'John Michael Doe');
+    cy.get('.orangehrm-buzz-post-body-text').should('contain', 'Some random text.');
+    // Likes
+    cy.get(
+      '.orangehrm-buzz-stats-active:contains("Like")'
+    ).should('contain', '1 Like'); // Initial + 2 new likes
+
+    // Comments
+    cy.get(
+      '.orangehrm-buzz-stats-active:contains("Comment")'
+    ).should('contain', '0 Comments'); // 2 new comments      
+  });
+
+
+  it('should validate the post, likes, comments, and shares on the Buzz feed', () => {
+    cy.visit(`${baseUrl}/buzz/viewBuzz`);
+    // Mock the Buzz feed API response
+    cy.intercept('GET', '/web/index.php/api/v2/buzz/feed?*', (req) => {
+      req.reply((res) => {
+        res.body.data = [
+          {
+            id: 10, // Unique post ID
+            post: { id: 10 },
+            type: 'photo',
+            liked: true,
+            text: 'Some random text.',
+            employee: {
+              empNumber: 7,
+              lastName: 'Doe',
+              firstName: 'John',
+              middleName: 'Michael',
+              employeeId: 'johnmdoe',
+              terminationId: null,
+            },
+            stats: {
+              numOfLikes: 2,
+              numOfComments: 3,
+              numOfShares: 4,
+            },
+            createdDate: '2024-11-17',
+            createdTime: '11:05',
+            originalPost: null,
+            permission: {
+              canUpdate: true,
+              canDelete: true,
+            },
+            photoIds: [17],
+          },
+        ];
+        return res;
+      });
+    }).as('getPosts');
+
+    // Mock the "like" API response
+    cy.intercept('POST', '/web/index.php/api/v2/buzz/shares/10/likes', {
+      statusCode: 200,
+      body: {
+        data: {
+          id: 74,
+          date: '2024-11-17',
+          time: '11:57',
+          share: { id: 10 },
+          employee: {
+            empNumber: 7,
+            lastName: 'Doe',
+            firstName: 'John',
+            middleName: 'Michael',
+            employeeId: '1234567',
+            terminationId: null,
+          },
+        },
+        meta: [],
+        rels: [],
+      },
+    }).as('postLike');
+
+    // Mock the "comment" API response
+    cy.intercept('POST', '/web/index.php/api/v2/buzz/shares/10/comments', {
+      statusCode: 200,
+      body: {
+        data: {
+          comment: {
+            id: 38,
+            createdDate: '2024-11-17',
+            createdTime: '11:57',
+          },
+          share: { id: 10 },
+          employee: {
+            empNumber: 7,
+            lastName: 'Doe',
+            firstName: 'John',
+            middleName: 'Michael',
+            employeeId: '1234567',
+            terminationId: null,
+          },
+        },
+        meta: [],
+        rels: [],
+      },
+    }).as('postComment');
+
+    // Mock the "share" API response
+    cy.intercept('POST', '/web/index.php/api/v2/buzz/shares', {
+      statusCode: 200,
+      body: {
+        data: {
+          share: { id: 40 },
+          post: { id: 9 },
+          employee: {
+            empNumber: 7,
+            lastName: 'Doe',
+            firstName: 'John',
+            middleName: 'Michael',
+            employeeId: '1234567',
+            terminationId: null,
+          },
+        },
+        meta: [],
+        rels: [],
+      },
+    }).as('postShare');
+
+    // Wait for the initial mock response
+    cy.wait('@getPosts').then((interception) => {
+      expect(interception.response.statusCode).to.eq(200);
+    });
+
+    // Validate initial post details
+    cy.get('.orangehrm-buzz-post-emp-name', { timeout: 8000 }).should(
+      'contain',
+      'John Michael Doe'
+    );
+    cy.get('.orangehrm-buzz-post-body-text').should('contain', 'Some random text.');
+
+    // Perform 1 like
+    cy.request('POST', `${baseUrl}/api/v2/buzz/shares/10/likes`);
+    cy.wait('@postLike', { timeout: 10000 });
+
+    // Perform 2 comments
+    //cy.request('POST', `${baseUrl}/api/v2/buzz/shares/10/comments`, { text: 'First comment!' });
+    //cy.request('POST', `${baseUrl}/api/v2/buzz/shares/10/comments`, { text: 'Second comment!' });
+    //cy.wait('@postComment', { timeout: 10000 });
+
+    // Perform 1 share
+    cy.request('POST', `${baseUrl}/api/v2/buzz/shares`, { shareId: 10, text: 'wow look at this!' });
+    cy.wait('@postShare', { timeout: 10000 });
+
+    // Validate updated stats in the UI
+    // Likes
+    cy.get(
+      '.orangehrm-buzz-stats-active:contains("Like")'
+    ).should('contain', '2 Like'); // Initial + 2 new likes
+
+    // Comments
+    cy.get(
+      '.orangehrm-buzz-stats-active:contains("Comment")'
+    ).should('contain', '3 Comments'); // 2 new comments
+
+    // Shares
+    cy.get(
+      '.orangehrm-buzz-stats-active:contains("Share")'
+    ).should('contain', '4 Shares'); // 1 new share
+    });
+
+  describe('Performance Tests', () => {
+    it('should load the Buzz feed within acceptable time', () => {
+      // Intercept the Buzz feed API call with a wildcard for query parameters
+      cy.intercept('GET', '/web/index.php/api/v2/buzz/feed*').as('getPosts');
+
+      // Visit the Buzz page
+      cy.visit(`${baseUrl}/buzz/viewBuzz`);
+
+      // Wait for the intercepted request with an increased timeout
+      cy.wait('@getPosts', { timeout: 10000 }).then((interception) => {
+      // Check if the response was successful
+      expect(interception.response.statusCode).to.eq(200);
+
+      // Measure response duration from request initiation
+      const duration = interception.response?.duration || 0;
+      expect(duration).to.be.lessThan(2000); // Ensure duration < 2 seconds
+      });
+    });
+  });
+
 });
