@@ -10,13 +10,11 @@ describe('OrangeHRM E2E Tests', () => {
     cy.get('button[type="submit"]').click();
   });
 
-  // Case 1 - Login Test
   it('should log in and navigate to the dashboard', () => {
     cy.url().should('include', '/dashboard/index');
     cy.get('.oxd-topbar-header-breadcrumb').should('contain', 'Dashboard');
   });
 
-  // Case 2 - Edit Personal Details
   it('should edit and save personal details on "My Info" page', () => {
 
     cy.get('span.oxd-main-menu-item--name').contains('My Info').click();
@@ -71,10 +69,10 @@ describe('OrangeHRM E2E Tests', () => {
         .should('contain.text', 'Married');
     });
 
-  it('Validates the post and interactions with mock data', () => {
+  it('should validate the post and interactions with mock data', () => {
     cy.visit(`${baseUrl}/buzz/viewBuzz`);
       // Mocking the posts API
-      cy.intercept('GET', '/web/index.php/api/v2/buzz/feed?*', (req) => {
+    cy.intercept('GET', '/web/index.php/api/v2/buzz/feed?*', (req) => {
         req.reply((res) => {
           // Modify the response with unique post IDs
           res.body = fixtures.mockPostData;
@@ -82,12 +80,11 @@ describe('OrangeHRM E2E Tests', () => {
         });
       }).as('getPosts');
 
-    // Wait for the mock API response
     cy.wait('@getPosts').then((interception) => {
       // Validate the intercepted request
       expect(interception.response.statusCode).to.eq(200);
       expect(interception.response.body.data).to.have.length.greaterThan(0);
-      expect(interception.response.body.data[0].id).to.eq(18); // Assert unique post ID
+      expect(interception.response.body.data[0].id).to.eq(18);
     });
 
     // Validate the first post's details in the UI
@@ -161,7 +158,7 @@ describe('OrangeHRM E2E Tests', () => {
   it('should not allow duplicate likes and display appropriate error message', () => {
 
     cy.visit(`${baseUrl}/buzz/viewBuzz`);
-      // Mock the Buzz feed API response
+    // Mock the Buzz feed API response
     cy.intercept('GET', '/web/index.php/api/v2/buzz/feed?*', (req) => {
         req.reply((res) => {
           res.body = fixtures.mockBuzzFeed;
@@ -185,7 +182,7 @@ describe('OrangeHRM E2E Tests', () => {
         'John Michael Doe'
     );
 
-      // Perform 1 like
+    // Perform 1 like
     cy.request({
         method: 'POST', 
         url: `${baseUrl}/api/v2/buzz/shares/10/likes`, 
