@@ -80,6 +80,11 @@ Select the test file to run from the displayed list.
 4. UI Identifiers: The test suite relies on CSS selectors available in the current version of OrangeHRM. Changes in the UI structure or CSS classes may require test updates.
 5. Error Messages: Assumes the default error messages displayed by the application. These messages might differ in other configurations or locales.
 
+### Suggestions
+
+1. Provide proper API documentation.
+2. Insert proper `cypress-data-id` identifiers into UI elements, so they could be easily found by the Test framework
+
 ### Additional Notes
 
 * The tests are designed to be run in isolation for repeatability and reliability.

@@ -1,17 +1,19 @@
+import { fixtures } from "../fixtures/fixtures";
+
 describe('OrangeHRM E2E Tests', () => {
   const baseUrl = 'https://opensource-demo.orangehrmlive.com/web/index.php';
 
   beforeEach(() => {
-      cy.visit(`${baseUrl}/auth/login`);
-      cy.get('input[name="username"]').type('Admin');
-      cy.get('input[name="password"]').type('admin123');
-      cy.get('button[type="submit"]').click();
+    cy.visit(`${baseUrl}/auth/login`);
+    cy.get('input[name="username"]').type('Admin');
+    cy.get('input[name="password"]').type('admin123');
+    cy.get('button[type="submit"]').click();
   });
 
   // Case 1 - Login Test
   it('should log in and navigate to the dashboard', () => {
-      cy.url().should('include', '/dashboard/index');
-      cy.get('.oxd-topbar-header-breadcrumb').should('contain', 'Dashboard');
+    cy.url().should('include', '/dashboard/index');
+    cy.get('.oxd-topbar-header-breadcrumb').should('contain', 'Dashboard');
   });
 
   // Case 2 - Edit Personal Details
@@ -67,49 +69,18 @@ describe('OrangeHRM E2E Tests', () => {
     cy.get('div.oxd-select-text-input')
         .eq(1) // Verify Marital Status
         .should('contain.text', 'Married');
-    
     });
 
   it('Validates the post and interactions with mock data', () => {
-
     cy.visit(`${baseUrl}/buzz/viewBuzz`);
-    // Mocking the posts API
-    cy.intercept('GET', '/web/index.php/api/v2/buzz/feed?*', (req) => {
-      req.reply((res) => {
-        // Modify the response with unique post IDs
-        res.body.data = [
-          {
-            id: 18, // Unique post ID
-            post: { id: 18 }, // Ensuring the post object has a unique ID
-            type: 'photo',
-            liked: true,
-            text: 'Some random text.',
-            employee: {
-              empNumber: 7,
-              lastName: 'Doe',
-              firstName: 'John',
-              middleName: 'Michael',
-              employeeId: 'johnmdoe',
-              terminationId: null
-            },
-            stats: {
-              numOfLikes: 1,
-              numOfComments: 0,
-              numOfShares: 0
-            },
-            createdDate: '2024-11-17',
-            createdTime: '11:05',
-            originalPost: null,
-            permission: {
-              canUpdate: true,
-              canDelete: true
-            },
-            photoIds: [17]
-          }
-        ];
-        return res;
-      });
-    }).as('getPosts');
+      // Mocking the posts API
+      cy.intercept('GET', '/web/index.php/api/v2/buzz/feed?*', (req) => {
+        req.reply((res) => {
+          // Modify the response with unique post IDs
+          res.body = fixtures.mockPostData;
+          return res;
+        });
+      }).as('getPosts');
 
     // Wait for the mock API response
     cy.wait('@getPosts').then((interception) => {
@@ -136,112 +107,27 @@ describe('OrangeHRM E2E Tests', () => {
 
 
   it('should validate the post, likes, comments, and shares on the Buzz feed', () => {
-    cy.visit(`${baseUrl}/buzz/viewBuzz`);
+    cy.visit(`${baseUrl}/buzz/viewBuzz`, {timeout : 8000});
     // Mock the Buzz feed API response
     cy.intercept('GET', '/web/index.php/api/v2/buzz/feed?*', (req) => {
       req.reply((res) => {
-        res.body.data = [
-          {
-            id: 10, // Unique post ID
-            post: { id: 10 },
-            type: 'photo',
-            liked: true,
-            text: 'Some random text.',
-            employee: {
-              empNumber: 7,
-              lastName: 'Doe',
-              firstName: 'John',
-              middleName: 'Michael',
-              employeeId: 'johnmdoe',
-              terminationId: null,
-            },
-            stats: {
-              numOfLikes: 2,
-              numOfComments: 3,
-              numOfShares: 4,
-            },
-            createdDate: '2024-11-17',
-            createdTime: '11:05',
-            originalPost: null,
-            permission: {
-              canUpdate: true,
-              canDelete: true,
-            },
-            photoIds: [17],
-          },
-        ];
+        res.body = fixtures.mockBuzzFeed;
         return res;
       });
     }).as('getPosts');
 
     // Mock the "like" API response
-    cy.intercept('POST', '/web/index.php/api/v2/buzz/shares/10/likes', {
-      statusCode: 200,
-      body: {
-        data: {
-          id: 74,
-          date: '2024-11-17',
-          time: '11:57',
-          share: { id: 10 },
-          employee: {
-            empNumber: 7,
-            lastName: 'Doe',
-            firstName: 'John',
-            middleName: 'Michael',
-            employeeId: '1234567',
-            terminationId: null,
-          },
-        },
-        meta: [],
-        rels: [],
-      },
-    }).as('postLike');
-
+    cy.intercept('POST', '/web/index.php/api/v2/buzz/shares/10/likes', fixtures.mockLike).as(
+      'postLike'
+    );
     // Mock the "comment" API response
-    cy.intercept('POST', '/web/index.php/api/v2/buzz/shares/10/comments', {
-      statusCode: 200,
-      body: {
-        data: {
-          comment: {
-            id: 38,
-            createdDate: '2024-11-17',
-            createdTime: '11:57',
-          },
-          share: { id: 10 },
-          employee: {
-            empNumber: 7,
-            lastName: 'Doe',
-            firstName: 'John',
-            middleName: 'Michael',
-            employeeId: '1234567',
-            terminationId: null,
-          },
-        },
-        meta: [],
-        rels: [],
-      },
-    }).as('postComment');
+    cy.intercept('POST', '/web/index.php/api/v2/buzz/shares/10/comments', fixtures.mockComment).as(
+      'postComment'
+    );
 
     // Mock the "share" API response
-    cy.intercept('POST', '/web/index.php/api/v2/buzz/shares', {
-      statusCode: 200,
-      body: {
-        data: {
-          share: { id: 40 },
-          post: { id: 9 },
-          employee: {
-            empNumber: 7,
-            lastName: 'Doe',
-            firstName: 'John',
-            middleName: 'Michael',
-            employeeId: '1234567',
-            terminationId: null,
-          },
-        },
-        meta: [],
-        rels: [],
-      },
-    }).as('postShare');
+    cy.intercept('POST', '/web/index.php/api/v2/buzz/shares', fixtures.mockShare).as('postShare');
+
 
     // Wait for the initial mock response
     cy.wait('@getPosts').then((interception) => {
@@ -272,82 +158,35 @@ describe('OrangeHRM E2E Tests', () => {
     ).should('contain', '4 Shares'); // 1 new share
     });
 
-    it('should not allow duplicate likes and display appropriate error message', () => {
+  it('should not allow duplicate likes and display appropriate error message', () => {
 
-      cy.visit(`${baseUrl}/buzz/viewBuzz`);
+    cy.visit(`${baseUrl}/buzz/viewBuzz`);
       // Mock the Buzz feed API response
-      cy.intercept('GET', '/web/index.php/api/v2/buzz/feed?*', (req) => {
+    cy.intercept('GET', '/web/index.php/api/v2/buzz/feed?*', (req) => {
         req.reply((res) => {
-          res.body.data = [
-            {
-              id: 10, // Unique post ID
-              post: { id: 10 },
-              type: 'photo',
-              liked: true,
-              text: 'Some random text.',
-              employee: {
-                empNumber: 7,
-                lastName: 'Doe',
-                firstName: 'John',
-                middleName: 'Michael',
-                employeeId: 'johnmdoe',
-                terminationId: null,
-              },
-              stats: {
-                numOfLikes: 2,
-                numOfComments: 3,
-                numOfShares: 4,
-              },
-              createdDate: '2024-11-17',
-              createdTime: '11:05',
-              originalPost: null,
-              permission: {
-                canUpdate: true,
-                canDelete: true,
-              },
-              photoIds: [17],
-            },
-          ];
+          res.body = fixtures.mockBuzzFeed;
           return res;
         });
-      }).as('getPosts');
+    }).as('getPosts');
 
-      // Mock the "like" API response
-      cy.intercept('POST', '/web/index.php/api/v2/buzz/shares/10/likes', {
-        statusCode: 400,
-        body: {
-          data: {
-            id: 74,
-            date: '2024-11-17',
-            time: '11:57',
-            share: { id: 10 },
-            employee: {
-              empNumber: 7,
-              lastName: 'Doe',
-              firstName: 'John',
-              middleName: 'Michael',
-              employeeId: '1234567',
-              terminationId: null,
-            },
-          },
-          meta: [],
-          rels: [],
-        },
-      }).as('postDuplicateLike');
+    // Mock the "like" API response
+    cy.intercept('POST', '/web/index.php/api/v2/buzz/shares/10/likes', fixtures.mockLike).as(
+        'postDuplicateLike'
+    );
 
-      // Wait for the initial mock response
-      cy.wait('@getPosts').then((interception) => {
+    // Wait for the initial mock response
+    cy.wait('@getPosts').then((interception) => {
         expect(interception.response.statusCode).to.eq(200);
-      });
+    });
 
-      // Validate initial post details
-      cy.get('.orangehrm-buzz-post-emp-name', { timeout: 8000 }).should(
+    // Validate initial post details
+    cy.get('.orangehrm-buzz-post-emp-name', { timeout: 8000 }).should(
         'contain',
         'John Michael Doe'
-      );
+    );
 
       // Perform 1 like
-      cy.request({
+    cy.request({
         method: 'POST', 
         url: `${baseUrl}/api/v2/buzz/shares/10/likes`, 
         failOnStatusCode: false}).then((resp) => {
